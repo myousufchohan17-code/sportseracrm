@@ -241,7 +241,7 @@ async function validateItems(items) {
 }
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true })
+  res.json({ ok: true, blobStorageConfigured: Boolean(process.env.BLOB_READ_WRITE_TOKEN) })
 })
 
 app.get('/api/settings', async (_req, res) => {

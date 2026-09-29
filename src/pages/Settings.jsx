@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { api, upload } from '../api'
 import { useApp } from '../context'
 import { Field, inputClass } from '../components/ui'
@@ -23,6 +23,14 @@ export function SettingsPage() {
   })
   const [busy, setBusy] = useState(false)
   const [logoBusy, setLogoBusy] = useState(false)
+  const [storageConfigured, setStorageConfigured] = useState(true)
+  const [storageDismissed, setStorageDismissed] = useState(false)
+
+  useEffect(() => {
+    api('/health')
+      .then((data) => setStorageConfigured(data.blobStorageConfigured !== false))
+      .catch(() => {})
+  }, [])
 
   const save = async (e) => {
     e.preventDefault()
@@ -42,6 +50,17 @@ export function SettingsPage() {
   return (
     <div className="space-y-5 max-w-3xl">
       <Header title="Settings" subtitle="Shop details persist after refresh" />
+      {!storageConfigured && !storageDismissed && (
+        <div className="rounded-2xl bg-rose-50 border border-rose-200 p-4 flex items-start justify-between gap-3">
+          <div className="text-sm">
+            <p className="font-semibold text-rose-600">Storage not configured</p>
+            <p className="mt-1 text-rose-500">
+              Set the <code className="font-mono bg-rose-100 px-1.5 py-0.5 rounded">BLOB_READ_WRITE_TOKEN</code> environment variable in your Vercel project settings to enable logo uploads.
+            </p>
+          </div>
+          <button onClick={() => setStorageDismissed(true)} className="text-rose-300 hover:text-rose-500 font-bold text-lg leading-none shrink-0" aria-label="Dismiss">&times;</button>
+        </div>
+      )}
       <form onSubmit={save} className="card p-4 sm:p-6 space-y-4">
         <div className="flex items-center gap-4">
           {settings.logo ? <img src={settings.logo} alt="" className="w-16 h-16 rounded-2xl object-cover" /> : <div className="w-16 h-16 rounded-2xl bg-blush" />}
