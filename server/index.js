@@ -395,7 +395,7 @@ app.get('/api/dashboard', requireModule('dashboard'), async (req, res) => {
      JOIN orders o ON o.id = oi.order_id
      LEFT JOIN products p ON p.id = oi.product_id
      WHERE o.created_at >= $1 AND o.created_at <= $2 AND o.status != 'cancelled'
-     GROUP BY COALESCE(oi.product_id, oi.product_name)
+     GROUP BY oi.product_id, oi.product_name, p.image, p.price
      ORDER BY sold DESC
      LIMIT 5`, fromIso, toIso)
 
@@ -1231,7 +1231,7 @@ app.get('/api/reports/:type', requireModule('reports'), async (req, res) => {
        FROM order_items oi JOIN orders o ON o.id = oi.order_id
        LEFT JOIN products p ON p.id = oi.product_id
        WHERE o.created_at >= $1 AND o.created_at <= $2 AND o.status != 'cancelled'
-       GROUP BY COALESCE(oi.product_id, oi.product_name)
+       GROUP BY oi.product_id, oi.product_name, p.stock, p.image
        ORDER BY sold DESC`, fromIso, toIso)
     res.json({ items })
     return
