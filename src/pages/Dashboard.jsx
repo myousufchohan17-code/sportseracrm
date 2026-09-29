@@ -18,12 +18,15 @@ export function Dashboard() {
   const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     let alive = true
     setLoading(true)
+    setError(null)
     api(`/dashboard?from=${range.from}&to=${range.to}`)
       .then((d) => { if (alive) setData(d) })
+      .catch((err) => { if (alive) setError(err.message || 'Failed to load dashboard') })
       .finally(() => { if (alive) setLoading(false) })
     return () => { alive = false }
   }, [range.from, range.to])
@@ -35,6 +38,25 @@ export function Dashboard() {
   const symbol = data?.currency_symbol || settings.currency_symbol || '$'
 
   if (loading && !data) return <Spinner label="Loading dashboard…" />
+
+  if (error && !data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        </div>
+        <h3 className="font-semibold text-ink">Failed to load dashboard</h3>
+        <p className="text-sm text-muted mt-1 max-w-sm">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-5 px-4 py-2.5 rounded-xl bg-bloom text-white text-sm font-semibold hover:bg-bloom-dark"
+        >
+          Try Again
+        </button>
+      </div>
+    )
+  }
+
   if (!data) return null
 
   const cards = [
