@@ -1290,7 +1290,7 @@ app.get('/api/reports/:type/export', requireModule('reports'), async (req, res) 
       `SELECT oi.product_name, SUM(oi.quantity) AS sold, SUM(oi.total) AS revenue
        FROM order_items oi JOIN orders o ON o.id = oi.order_id
        WHERE o.created_at >= $1 AND o.created_at <= $2 AND o.status != 'cancelled'
-       GROUP BY COALESCE(oi.product_id, oi.product_name) ORDER BY sold DESC`, fromIso, toIso)
+       GROUP BY oi.product_id, oi.product_name ORDER BY sold DESC`, fromIso, toIso)
     rows = items.map((r) => [r.product_name, r.sold, r.revenue])
   } else if (type === 'customers') {
     headers = ['Customer', 'Phone', 'Orders', 'Spent']
