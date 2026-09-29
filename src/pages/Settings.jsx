@@ -1,0 +1,81 @@
+import { useState } from 'react'
+import { api, upload } from '../api'
+import { useApp } from '../context'
+import { Field, inputClass } from '../components/ui'
+import { Header } from './Customers'
+
+export function SettingsPage() {
+  const { settings, setSettings, toast, refreshMe } = useApp()
+  const [form, setForm] = useState({
+    shop_name: settings.shop_name || '',
+    shop_tagline: settings.shop_tagline || '',
+    email: settings.email || '',
+    phone: settings.phone || '',
+    address: settings.address || '',
+    currency: settings.currency || 'USD',
+    currency_symbol: settings.currency_symbol || '$',
+    tax_rate: settings.tax_rate || 0,
+    order_prefix: settings.order_prefix || 'ORD',
+    allow_backorder: Boolean(settings.allow_backorder),
+    low_stock_notify: settings.low_stock_notify !== false,
+    notify_orders: settings.notify_orders !== false,
+    notify_inventory: settings.notify_inventory !== false,
+  })
+  const [busy, setBusy] = useState(false)
+
+  const save = async (e) => {
+    e.preventDefault()
+    setBusy(true)
+    try {
+      const next = await api('/settings', { method: 'PUT', body: form })
+      setSettings(next)
+      await refreshMe()
+      toast('Settings saved')
+    } catch (err) {
+      toast(err.message, 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-5 max-w-3xl">
+      <Header title="Settings" subtitle="Shop details persist after refresh" />
+      <form onSubmit={save} className="card p-4 sm:p-6 space-y-4">
+        <div className="flex items-center gap-4">
+          {settings.logo ? <img src={settings.logo} alt="" className="w-16 h-16 rounded-2xl object-cover" /> : <div className="w-16 h-16 rounded-2xl bg-blush" />}
+          <label className="text-sm font-semibold text-bloom cursor-pointer">
+            Upload logo
+            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              try {
+                const res = await upload('/settings/logo', file, 'logo')
+                setSettings(res.settings)
+                toast('Logo updated')
+              } catch (err) { toast(err.message, 'error') }
+            }} />
+          </label>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <Field label="Shop name"><input className={inputClass} placeholder="SportsEra Sports Shop CRM" value={form.shop_name} onChange={(e) => setForm({ ...form, shop_name: e.target.value })} /></Field>
+          <Field label="Tagline"><input className={inputClass} placeholder="Sports Shop CRM" value={form.shop_tagline} onChange={(e) => setForm({ ...form, shop_tagline: e.target.value })} /></Field>
+          <Field label="Email"><input type="email" className={inputClass} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+          <Field label="Phone"><input className={inputClass} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
+        </div>
+        <Field label="Address"><input className={inputClass} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></Field>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <Field label="Currency code"><input className={inputClass} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} /></Field>
+          <Field label="Currency symbol"><input className={inputClass} value={form.currency_symbol} onChange={(e) => setForm({ ...form, currency_symbol: e.target.value })} /></Field>
+          <Field label="Tax rate %"><input type="number" min="0" step="0.01" className={inputClass} value={form.tax_rate} onChange={(e) => setForm({ ...form, tax_rate: e.target.value })} /></Field>
+        </div>
+        <Field label="Order prefix"><input className={inputClass} value={form.order_prefix} onChange={(e) => setForm({ ...form, order_prefix: e.target.value })} /></Field>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.allow_backorder} onChange={(e) => setForm({ ...form, allow_backorder: e.target.checked })} /> Allow selling more than available stock</label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.low_stock_notify} onChange={(e) => setForm({ ...form, low_stock_notify: e.target.checked })} /> Low-stock notifications</label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_orders} onChange={(e) => setForm({ ...form, notify_orders: e.target.checked })} /> New-order notifications</label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.notify_inventory} onChange={(e) => setForm({ ...form, notify_inventory: e.target.checked })} /> Inventory notifications</label>
+        <button disabled={busy} className="h-11 px-5 rounded-2xl bg-bloom text-white font-semibold disabled:opacity-60 w-full sm:w-auto">{busy ? 'Saving…' : 'Save settings'}</button>
+      </form>
+    </div>
+  )
+}

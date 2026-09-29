@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-bloom: #dc2626;
+  --color-bloom-dark: #b91c1c;
+  --color-blush: #fef2f2;
+  --color-mint: #7bc9a6;
+  --color-mint-soft: #e5f6ee;
+  --color-lavender: #a78bfa;
+  --color-lavender-soft: #ede7ff;
+  --color-peach: #f5a15a;
+  --color-peach-soft: #feecdc;
+  --color-ink: #2c2428;
+  --color-muted: #8d8086;
+  --color-line: #fecaca;
+  --color-canvas: #faf5f5;
+}
+
+html, body, #root {
+  min-height: 100%;
+  max-width: 100%;
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background: #faf5f5;
+  color: #2c2428;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #fca5a5 transparent;
+  box-sizing: border-box;
+}
+
+img, svg, video, canvas {
+  max-width: 100%;
+}
+
+input, select, textarea, button {
+  font-family: inherit;
+  max-width: 100%;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 30px rgba(220, 38, 38, 0.06);
+  min-width: 0;
+}
+
+.soft-ring:focus, .soft-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.22);
+}
+
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.form-actions > * {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .form-actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .form-actions > * {
+    width: auto;
+  }
+}
