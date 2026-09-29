@@ -4,13 +4,13 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import { put, del } from '@vercel/blob'
 import {
   pool,
   all,
   get,
   run,
   exec,
-  uploadDir,
   id,
   nowIso,
   getSetting,
@@ -32,15 +32,8 @@ const PORT = process.env.PORT || 4000
 
 app.use(cors())
 app.use(express.json({ limit: '4mb' }))
-app.use('/uploads', express.static(uploadDir))
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg'
-    cb(null, `${Date.now()}-${crypto.randomUUID()}${ext}`)
-  },
-})
+const storage = multer.memoryStorage()
 
 const upload = multer({
   storage,
@@ -268,14 +261,47 @@ app.put('/api/settings', async (req, res) => {
 
 app.post('/api/settings/logo', upload.single('logo'), async (req, res) => {
   if (!req.file) return fail(res, 400, 'Please choose a logo image')
-  const url = `/uploads/${req.file.filename}`
-  await setSetting('logo', url)
-  res.json({ logo: url, settings: await getSettings() })
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp']
+  if (!allowedTypes.includes(req.file.mimetype)) {
+    return fail(res, 400, 'Only PNG, JPG, and WebP images are allowed')
+  }
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return fail(res, 500, 'Storage not configured. Please set BLOB_READ_WRITE_TOKEN in your Vercel environment variables.')
+  }
+  try {
+    const oldLogo = await getSetting('logo', '')
+    const ext = path.extname(req.file.originalname || '').toLowerCase() || '.png'
+    const filename = `logo-${Date.now()}-${crypto.randomUUID()}${ext}`
+    const blob = await put(filename, req.file.buffer, { access: 'public' })
+    await setSetting('logo', blob.url)
+    if (oldLogo && oldLogo.startsWith('https://') && oldLogo !== blob.url) {
+      try { await del(oldLogo) } catch {}
+    }
+    res.json({ logo: blob.url, settings: await getSettings() })
+  } catch (err) {
+    console.error('Logo upload failed:', err)
+    fail(res, 500, 'Failed to upload logo. Please try again.')
+  }
 })
 
-app.post('/api/upload', upload.single('image'), (req, res) => {
+app.post('/api/upload', upload.single('image'), async (req, res) => {
   if (!req.file) return fail(res, 400, 'Please choose an image')
-  res.json({ url: `/uploads/${req.file.filename}` })
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp']
+  if (!allowedTypes.includes(req.file.mimetype)) {
+    return fail(res, 400, 'Only PNG, JPG, and WebP images are allowed')
+  }
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return fail(res, 500, 'Storage not configured. Please set BLOB_READ_WRITE_TOKEN in your Vercel environment variables.')
+  }
+  try {
+    const ext = path.extname(req.file.originalname || '').toLowerCase() || '.png'
+    const filename = `image-${Date.now()}-${crypto.randomUUID()}${ext}`
+    const blob = await put(filename, req.file.buffer, { access: 'public' })
+    res.json({ url: blob.url })
+  } catch (err) {
+    console.error('Image upload failed:', err)
+    fail(res, 500, 'Failed to upload image. Please try again.')
+  }
 })
 
 app.get('/api/search', async (req, res) => {
@@ -1334,7 +1360,7 @@ const dist = path.join(__dirname, '..', 'dist')
 if (fs.existsSync(dist)) {
   app.use(express.static(dist))
   app.use((req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next()
+    if (req.path.startsWith('/api')) return next()
     res.sendFile(path.join(dist, 'index.html'))
   })
 }

@@ -42,8 +42,6 @@ async function exec(sql) {
 
 export { pool, all, get, run, exec }
 
-export const uploadDir = path.join(__dirname, '..', 'uploads')
-
 // In-memory settings cache for synchronous access
 let settingsCache = {}
 

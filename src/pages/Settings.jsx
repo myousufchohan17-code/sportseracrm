@@ -22,6 +22,7 @@ export function SettingsPage() {
     notify_inventory: settings.notify_inventory !== false,
   })
   const [busy, setBusy] = useState(false)
+  const [logoBusy, setLogoBusy] = useState(false)
 
   const save = async (e) => {
     e.preventDefault()
@@ -45,15 +46,28 @@ export function SettingsPage() {
         <div className="flex items-center gap-4">
           {settings.logo ? <img src={settings.logo} alt="" className="w-16 h-16 rounded-2xl object-cover" /> : <div className="w-16 h-16 rounded-2xl bg-blush" />}
           <label className="text-sm font-semibold text-bloom cursor-pointer">
-            Upload logo
-            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+            {logoBusy ? 'Uploading…' : 'Upload logo'}
+            <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={async (e) => {
               const file = e.target.files?.[0]
               if (!file) return
+              const allowedTypes = ['image/png', 'image/jpeg', 'image/webp']
+              if (!allowedTypes.includes(file.type)) {
+                toast('Only PNG, JPG, and WebP images are allowed', 'error')
+                e.target.value = ''
+                return
+              }
+              if (file.size > 5 * 1024 * 1024) {
+                toast('Image must be smaller than 5MB', 'error')
+                e.target.value = ''
+                return
+              }
+              setLogoBusy(true)
               try {
                 const res = await upload('/settings/logo', file, 'logo')
                 setSettings(res.settings)
                 toast('Logo updated')
               } catch (err) { toast(err.message, 'error') }
+              finally { setLogoBusy(false); e.target.value = '' }
             }} />
           </label>
         </div>
