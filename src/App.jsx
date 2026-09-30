@@ -4,6 +4,8 @@ import { AppProvider, useApp } from './context'
 import { Layout } from './components/Layout'
 import { Spinner } from './components/ui'
 
+import { ErrorBoundary } from './components/ErrorBoundary'
+
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
 const Orders = lazy(() => import('./pages/Orders').then((m) => ({ default: m.Orders })))
 const OrderForm = lazy(() => import('./pages/OrderForm').then((m) => ({ default: m.OrderForm })))
@@ -18,11 +20,12 @@ const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ defaul
 function AppRoutes() {
   const { bootstrapping } = useApp()
   if (bootstrapping) {
-    return <div className="min-h-svh grid place-items-center"><Spinner label="Starting SportsEra…" /></div>
+    return <div className="min-h-svh grid place-items-center bg-[#0F0F0F] text-white"><Spinner label="Starting RiSports…" /></div>
   }
   return (
-    <Suspense fallback={<div className="min-h-svh grid place-items-center"><Spinner /></div>}>
-      <Routes>
+    <ErrorBoundary>
+      <Suspense fallback={<div className="min-h-svh grid place-items-center bg-[#0F0F0F] text-white"><Spinner /></div>}>
+        <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/orders" element={<Orders />} />
@@ -40,6 +43,7 @@ function AppRoutes() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+    </ErrorBoundary>
   )
 }
 

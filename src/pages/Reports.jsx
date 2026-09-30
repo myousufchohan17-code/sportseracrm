@@ -55,7 +55,15 @@ export function Reports() {
       <Header title="Reports" subtitle={`Analytics for ${range.label.toLowerCase()}`} />
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap">
         {TYPES.map((t) => (
-          <button key={t.id} onClick={() => setType(t.id)} className={`h-10 px-4 rounded-2xl text-sm font-semibold border shrink-0 ${type === t.id ? 'bg-bloom text-white border-bloom' : 'bg-white border-line'}`}>
+          <button
+            key={t.id}
+            onClick={() => setType(t.id)}
+            className={`h-10 px-4 rounded-2xl text-sm font-semibold border shrink-0 transition-colors ${
+              type === t.id
+                ? 'bg-[#F97316] text-white border-[#F97316]'
+                : 'bg-[#1A1A1A] text-[#A3A3A3] hover:text-white border-[#3A3A3A]'
+            }`}
+          >
             {t.label}
           </button>
         ))}
@@ -68,9 +76,12 @@ export function Reports() {
         </div>
       )}
       <div className="card overflow-hidden">
-        <div className="flex flex-col sm:flex-row gap-3 p-4 border-b border-line">
+        <div className="flex flex-col sm:flex-row gap-3 p-4 border-b border-[#3A3A3A]">
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter results" className={inputClass} />
-          <button onClick={exportCsv} className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl border border-line text-sm font-semibold w-full sm:w-auto shrink-0">
+          <button
+            onClick={exportCsv}
+            className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl border border-[#3A3A3A] bg-[#1A1A1A] hover:bg-[#262626] text-white text-sm font-semibold w-full sm:w-auto shrink-0 transition-colors"
+          >
             <Download size={16} /> Export CSV
           </button>
         </div>
@@ -79,12 +90,12 @@ export function Reports() {
         ) : (
           <div className="overflow-x-auto table-scroll">
             <table className="w-full text-sm">
-              <thead className="text-xs text-muted bg-canvas/70">
+              <thead className="text-xs text-[#A3A3A3] bg-[#1A1A1A]">
                 <tr>{columns(type).map((c) => <th key={c} className="text-left px-4 py-3">{c}</th>)}</tr>
               </thead>
               <tbody>
                 {items.map((row, i) => (
-                  <tr key={row.id || row.product_id || row.name || i} className="border-t border-line">
+                  <tr key={row.id || row.product_id || row.name || i} className="border-t border-[#3A3A3A] hover:bg-[#1A1A1A]/40 text-white">
                     {renderRow(type, row, settings.currency_symbol)}
                   </tr>
                 ))}

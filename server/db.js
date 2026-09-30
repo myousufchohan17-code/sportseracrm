@@ -214,9 +214,16 @@ export async function initDb() {
     );
   `)
 
+  // Migrate schema for order_items snapshot image column
+  try {
+    await exec(`ALTER TABLE order_items ADD COLUMN IF NOT EXISTS image TEXT DEFAULT ''`)
+  } catch (err) {
+    console.error('Migration note:', err.message)
+  }
+
   const defaultSettings = {
-    shop_name: 'SportsEra Sports Shop CRM',
-    shop_tagline: 'Sports Shop CRM',
+    shop_name: 'RiSports',
+    shop_tagline: 'Sports Equipment & Apparel',
     logo: '',
     email: '',
     phone: '',
@@ -245,15 +252,15 @@ export async function initDb() {
   const shopName = String((await getSetting('shop_name')) || '')
   const shopTagline = String((await getSetting('shop_tagline')) || '')
   if (
+    !shopName ||
     /^sports$/i.test(shopName.trim()) ||
-    shopName === 'sportsEra' ||
-    shopName === 'SportsEra' ||
+    /sportsera/i.test(shopName) ||
     /flower/i.test(shopName)
   ) {
-    await setSetting('shop_name', 'SportsEra Sports Shop CRM')
+    await setSetting('shop_name', 'RiSports')
   }
-  if (/flower/i.test(shopTagline) || !shopTagline.trim()) {
-    await setSetting('shop_tagline', 'Sports Shop CRM')
+  if (!shopTagline || /flower/i.test(shopTagline) || /sports shop/i.test(shopTagline)) {
+    await setSetting('shop_tagline', 'Sports Equipment & Apparel')
   }
 }
 

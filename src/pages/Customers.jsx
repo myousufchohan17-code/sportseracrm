@@ -223,7 +223,7 @@ export function CustomerForm({ open, form, setForm, editing, busy, onClose, onSu
         <Field label="City"><input className={inputClass} value={form.city || ''} onChange={(e) => setForm({ ...form, city: e.target.value })} /></Field>
         <Field label="Notes"><textarea className={inputClass} rows={2} value={form.notes || ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field>
         <div className="form-actions">
-          <button type="button" onClick={onClose} className="h-10 px-4 rounded-xl border">Cancel</button>
+          <button type="button" onClick={onClose} className="h-10 px-4 rounded-xl border border-[#3A3A3A] hover:bg-[#1A1A1A] text-white transition-colors">Cancel</button>
           <button disabled={busy} className="h-10 px-4 rounded-xl bg-bloom text-white font-semibold">{busy ? 'Saving…' : 'Save'}</button>
         </div>
       </form>

@@ -119,7 +119,7 @@ export function Inventory() {
           </Field>
           <Field label="Note"><input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
           <div className="form-actions">
-            <button type="button" onClick={() => setAdjust(null)} className="h-10 px-4 rounded-xl border">Cancel</button>
+            <button type="button" onClick={() => setAdjust(null)} className="h-10 px-4 rounded-xl border border-[#3A3A3A] hover:bg-[#1A1A1A] text-white transition-colors">Cancel</button>
             <button disabled={busy} className="h-10 px-4 rounded-xl bg-bloom text-white font-semibold">{busy ? 'Saving…' : 'Save adjustment'}</button>
           </div>
         </form>

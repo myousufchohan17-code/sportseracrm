@@ -234,6 +234,7 @@ async function validateItems(items) {
       quantity,
       unit_price,
       total: Number((quantity * unit_price).toFixed(2)),
+      image: product?.image || item.image || '',
       stock: product?.stock ?? null,
     })
   }
@@ -241,7 +242,12 @@ async function validateItems(items) {
 }
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, blobStorageConfigured: Boolean(process.env.BLOB_READ_WRITE_TOKEN) })
+  const hasBlobToken = Boolean(process.env.BLOB_READ_WRITE_TOKEN)
+  res.json({
+    ok: true,
+    blobStorageConfigured: hasBlobToken,
+    storageStatus: hasBlobToken ? 'ready' : 'not_configured',
+  })
 })
 
 app.get('/api/settings', async (_req, res) => {
@@ -250,7 +256,7 @@ app.get('/api/settings', async (_req, res) => {
 
 app.put('/api/settings', async (req, res) => {
   const allowed = [
-    'shop_name', 'shop_tagline', 'email', 'phone', 'address', 'currency', 'currency_symbol',
+    'shop_name', 'shop_tagline', 'logo', 'email', 'phone', 'address', 'currency', 'currency_symbol',
     'tax_rate', 'allow_backorder', 'low_stock_notify', 'order_prefix', 'notify_orders', 'notify_inventory',
   ]
   for (const key of allowed) {
@@ -677,6 +683,9 @@ app.put('/api/products/:id', requireModule('products'), async (req, res) => {
   if (!existing) return fail(res, 404, 'Product not found')
   const { name, description, category_id, vendor_id, price, cost, low_stock_threshold, image, active } = req.body || {}
   if (!name?.trim()) return fail(res, 400, 'Product name is required')
+  if (image !== undefined && existing.image && existing.image !== image && existing.image.startsWith('https://')) {
+    try { await del(existing.image) } catch (err) { console.error('Failed to delete old blob:', err) }
+  }
   await run(
     `UPDATE products SET name=$1, description=$2, category_id=$3, vendor_id=$4, price=$5, cost=$6, low_stock_threshold=$7, image=$8, active=$9
      WHERE id=$10`,
@@ -689,11 +698,33 @@ app.put('/api/products/:id', requireModule('products'), async (req, res) => {
 })
 
 app.delete('/api/products/:id', requireModule('products'), async (req, res) => {
-  const usedRow = await get('SELECT COUNT(*) AS c FROM order_items WHERE product_id = $1', req.params.id)
-  if (usedRow?.c) return fail(res, 400, 'This product is used on orders. Deactivate it instead of deleting.')
-  const info = await run('DELETE FROM products WHERE id = $1', req.params.id)
-  if (!info.changes) return fail(res, 404, 'Product not found')
-  res.json({ ok: true })
+  try {
+    const existing = await get('SELECT * FROM products WHERE id = $1', req.params.id)
+    if (!existing) return fail(res, 404, 'Product not found')
+
+    // 1. Delete image from Vercel blob if applicable
+    if (existing.image && existing.image.startsWith('https://')) {
+      try { await del(existing.image) } catch (err) {
+        console.error('Blob delete note:', err)
+      }
+    }
+
+    // 2. Preserve order history snapshot by disconnecting product_id
+    // (order_items retains product_name, unit_price, quantity, total, and image snapshot)
+    await run('UPDATE order_items SET product_id = NULL WHERE product_id = $1', req.params.id)
+
+    // 3. Remove inventory movements referencing this product
+    await run('DELETE FROM inventory_movements WHERE product_id = $1', req.params.id)
+
+    // 4. Delete product
+    const info = await run('DELETE FROM products WHERE id = $1', req.params.id)
+    if (!info.changes) return fail(res, 404, 'Product not found')
+
+    res.json({ ok: true, message: 'Product deleted successfully' })
+  } catch (err) {
+    console.error('Delete product error:', err)
+    return fail(res, 500, 'Could not delete product. Please try again.')
+  }
 })
 
 app.get('/api/inventory', requireModule('inventory'), async (req, res) => {
@@ -987,9 +1018,9 @@ app.post('/api/orders', requireModule('orders'), async (req, res) => {
       )
       for (const item of items) {
         await run(
-          `INSERT INTO order_items (id, order_id, product_id, product_name, quantity, unit_price, total)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          id(), orderId, item.product_id, item.product_name, item.quantity, item.unit_price, item.total
+          `INSERT INTO order_items (id, order_id, product_id, product_name, quantity, unit_price, total, image)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          id(), orderId, item.product_id, item.product_name, item.quantity, item.unit_price, item.total, item.image || ''
         )
       }
       if (STOCK_STATUSES.has(status)) await applyStock(orderId, 'order_confirm')
@@ -1026,9 +1057,9 @@ app.put('/api/orders/:id', requireModule('orders'), async (req, res) => {
     await run('DELETE FROM order_items WHERE order_id = $1', existing.id)
     for (const item of items) {
       await run(
-        `INSERT INTO order_items (id, order_id, product_id, product_name, quantity, unit_price, total)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        id(), existing.id, item.product_id, item.product_name, item.quantity, item.unit_price, item.total
+        `INSERT INTO order_items (id, order_id, product_id, product_name, quantity, unit_price, total, image)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        id(), existing.id, item.product_id, item.product_name, item.quantity, item.unit_price, item.total, item.image || ''
       )
     }
     await run(
@@ -1372,7 +1403,7 @@ initDb().catch((err) => {
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {
-    console.log(`SportsEra API running on http://127.0.0.1:${PORT}`)
+    console.log(`RiSports API running on http://127.0.0.1:${PORT}`)
   })
 }
 

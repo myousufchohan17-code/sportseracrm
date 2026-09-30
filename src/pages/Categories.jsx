@@ -47,17 +47,17 @@ export function Categories() {
           </div>
         </div>
         {loading ? <Spinner /> : items.length === 0 ? (
-          <EmptyState icon={Tags} title="No categories yet" description="Create categories such as Bouquets or Plants when you are ready. None are preloaded." actionLabel="Add Category" onAction={() => setOpen(true)} />
+          <EmptyState icon={Tags} title="No categories yet" description="Create sports categories such as Footwear, Apparel, or Equipment." actionLabel="Add Category" onAction={() => setOpen(true)} />
         ) : (
           <ul className="divide-y divide-line">
             {items.map((c) => (
               <li key={c.id} className="px-4 sm:px-5 py-4 flex items-start sm:items-center gap-3 min-w-0">
                 <div className="flex-1 min-w-0">
-                  <button className="font-semibold hover:text-bloom text-left truncate max-w-full" onClick={async () => setDetail(await api(`/categories/${c.id}`))}>{c.name}</button>
+                  <button className="font-semibold hover:text-bloom text-left truncate max-w-full text-white" onClick={async () => setDetail(await api(`/categories/${c.id}`))}>{c.name}</button>
                   <p className="text-xs text-muted break-words">{c.product_count} products · {c.description || 'No description'}</p>
                 </div>
-                <button onClick={() => { setEditing(c); setForm({ name: c.name, description: c.description || '' }); setOpen(true) }} className="p-2 rounded-xl hover:bg-canvas shrink-0"><Pencil size={16} /></button>
-                <button onClick={() => setConfirm(c)} className="p-2 rounded-xl hover:bg-canvas text-rose-500 shrink-0"><Trash2 size={16} /></button>
+                <button onClick={() => { setEditing(c); setForm({ name: c.name, description: c.description || '' }); setOpen(true) }} className="p-2 rounded-xl hover:bg-[#1A1A1A] text-[#A3A3A3] hover:text-white shrink-0 transition-colors"><Pencil size={16} /></button>
+                <button onClick={() => setConfirm(c)} className="p-2 rounded-xl hover:bg-[#1A1A1A] text-rose-500 shrink-0 transition-colors"><Trash2 size={16} /></button>
               </li>
             ))}
           </ul>
@@ -68,7 +68,7 @@ export function Categories() {
           <Field label="Name"><input required className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
           <Field label="Description"><textarea className={inputClass} rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
           <div className="form-actions">
-            <button type="button" onClick={() => setOpen(false)} className="h-10 px-4 rounded-xl border">Cancel</button>
+            <button type="button" onClick={() => setOpen(false)} className="h-10 px-4 rounded-xl border border-[#3A3A3A] hover:bg-[#1A1A1A] text-white transition-colors">Cancel</button>
             <button disabled={busy} className="h-10 px-4 rounded-xl bg-bloom text-white font-semibold">{busy ? 'Saving…' : 'Save'}</button>
           </div>
         </form>

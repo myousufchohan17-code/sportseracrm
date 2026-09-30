@@ -2,19 +2,34 @@
 
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --color-bloom: #dc2626;
-  --color-bloom-dark: #b91c1c;
-  --color-blush: #fef2f2;
-  --color-mint: #7bc9a6;
-  --color-mint-soft: #e5f6ee;
-  --color-lavender: #a78bfa;
-  --color-lavender-soft: #ede7ff;
-  --color-peach: #f5a15a;
-  --color-peach-soft: #feecdc;
-  --color-ink: #2c2428;
-  --color-muted: #8d8086;
-  --color-line: #fecaca;
-  --color-canvas: #faf5f5;
+  
+  /* RiSports Gray, Black, and Orange Palette */
+  --color-canvas: #0F0F0F;
+  --color-panel: #1A1A1A;
+  --color-card: #262626;
+  --color-line: #3A3A3A;
+  --color-ink: #FFFFFF;
+  --color-muted: #A3A3A3;
+  --color-bloom: #F97316;
+  --color-bloom-dark: #EA580C;
+  --color-blush: #262626;
+  --color-mint: #10B981;
+  --color-mint-soft: #1C2D24;
+  --color-lavender: #F97316;
+  --color-lavender-soft: #2D2018;
+  --color-peach: #FB923C;
+  --color-peach-soft: #2D2018;
+}
+
+:root {
+  --bg-canvas: #0F0F0F;
+  --bg-panel: #1A1A1A;
+  --bg-card: #262626;
+  --border-line: #3A3A3A;
+  --text-white: #FFFFFF;
+  --text-muted: #A3A3A3;
+  --accent-orange: #F97316;
+  --accent-orange-hover: #EA580C;
 }
 
 html, body, #root {
@@ -28,9 +43,10 @@ html, body {
 
 body {
   margin: 0;
-  background: #faf5f5;
-  color: #2c2428;
+  background-color: #0F0F0F;
+  color: #FFFFFF;
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  color-scheme: dark;
 }
 
 #root {
@@ -40,7 +56,7 @@ body {
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #fca5a5 transparent;
+  scrollbar-color: #3A3A3A transparent;
   box-sizing: border-box;
 }
 
@@ -54,16 +70,17 @@ input, select, textarea, button {
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #fecaca;
+  background-color: #262626;
+  border: 1px solid #3A3A3A;
   border-radius: 1.25rem;
-  box-shadow: 0 8px 30px rgba(220, 38, 38, 0.06);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
   min-width: 0;
+  color: #FFFFFF;
 }
 
 .soft-ring:focus, .soft-ring:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.22);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
 }
 
 .table-scroll {
