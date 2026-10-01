@@ -83,8 +83,8 @@ export function Header({ onMenu }) {
                     <Group title="Orders">
                       {results.orders.map((o) => (
                         <button key={o.id} onClick={() => go(`/orders/${o.id}`)} className="w-full text-left px-4 py-2 hover:bg-[#1A1A1A] text-sm flex items-center justify-between text-white">
-                          <span className="font-semibold">{o.order_number}</span>
-                          <span className="text-[#A3A3A3] text-xs">{o.customer_name || 'Walk-in'}</span>
+                          <span className="font-semibold">{o.customer_name || 'Walk-in'}</span>
+                          <span className="text-[#A3A3A3] text-xs">{money(o.total, settings.currency_symbol)}</span>
                         </button>
                       ))}
                     </Group>
@@ -206,7 +206,7 @@ export function Header({ onMenu }) {
                       className="min-w-0 flex-1 px-4 py-3 text-left hover:bg-[#1A1A1A] transition-colors"
                     >
                       <p className="text-sm font-semibold text-white">{n.title}</p>
-                      <p className="text-xs text-[#A3A3A3] mt-0.5">{n.message}</p>
+                      <p className="text-xs text-[#A3A3A3] mt-0.5">{n.type === 'order' ? 'A new order was created.' : n.message}</p>
                     </button>
                     <button
                       type="button"

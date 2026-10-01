@@ -382,7 +382,7 @@ function OrderFormInner({ mode }) {
             </button>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-white">{orderMeta?.order_number || 'Order'}</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-white">Order details</h1>
                 <StatusBadge status={orderMeta?.status} />
               </div>
               <p className="text-xs text-[#A3A3A3] mt-0.5">
@@ -524,7 +524,7 @@ function OrderFormInner({ mode }) {
           </div>
         </div>
 
-        <Modal open={receiptOpen && !!orderMeta} title={`Receipt #${orderMeta?.order_number || ''}`} onClose={() => setReceiptOpen(false)} slim>
+        <Modal open={receiptOpen && !!orderMeta} title="Receipt" onClose={() => setReceiptOpen(false)} slim>
           <ReceiptDocument order={orderMeta} settings={settings} />
           <ReceiptActions onClose={() => setReceiptOpen(false)} onPrint={handlePrint} />
         </Modal>
@@ -571,7 +571,7 @@ function OrderFormInner({ mode }) {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold text-white">
-              {mode === 'create' ? 'Point of Sale' : `Edit ${orderMeta?.order_number || 'Order'}`}
+              {mode === 'create' ? 'Point of Sale' : 'Edit Order'}
             </h1>
             <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#F97316]/20 text-[#F97316] border border-[#F97316]/30">
               POS

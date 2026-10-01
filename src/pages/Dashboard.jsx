@@ -206,8 +206,7 @@ export function Dashboard() {
               <div className="md:hidden divide-y divide-[#3A3A3A]">
                 {data.recent_orders.map((o) => (
                   <button key={o.id} type="button" onClick={() => navigate(`/orders/${o.id}`)} className="w-full text-left px-4 py-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold text-sm text-white">{o.order_number}</p>
+                    <div className="flex items-center justify-end gap-2">
                       <StatusBadge status={o.status} />
                     </div>
                     <p className="text-sm text-[#A3A3A3] mt-1">{o.customer?.name || o.customer_name || 'Walk-in'}</p>
@@ -222,7 +221,6 @@ export function Dashboard() {
                 <table className="w-full text-sm">
                   <thead className="text-xs text-[#A3A3A3] bg-[#1A1A1A]">
                     <tr>
-                      <th className="text-left font-semibold px-5 py-3">Order</th>
                       <th className="text-left font-semibold px-5 py-3">Customer</th>
                       <th className="text-left font-semibold px-5 py-3">Amount</th>
                       <th className="text-left font-semibold px-5 py-3">Status</th>
@@ -232,7 +230,6 @@ export function Dashboard() {
                   <tbody>
                     {data.recent_orders.map((o) => (
                       <tr key={o.id} className="border-t border-[#3A3A3A] hover:bg-[#1A1A1A]/50 cursor-pointer" onClick={() => navigate(`/orders/${o.id}`)}>
-                        <td className="px-5 py-3 font-semibold text-white">{o.order_number}</td>
                         <td className="px-5 py-3 text-white">{o.customer?.name || o.customer_name || 'Walk-in'}</td>
                         <td className="px-5 py-3 font-semibold text-white">{money(o.total, symbol)}</td>
                         <td className="px-5 py-3"><StatusBadge status={o.status} /></td>

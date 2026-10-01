@@ -1166,7 +1166,7 @@ app.post('/api/orders', requireModule('orders'), async (req, res) => {
     }
     const notifyOrders = await getSetting('notify_orders', true)
     if (notifyOrders) {
-      await notify('order', 'New order', `${row.order_number} was created.`, `/orders/${orderId}`)
+      await notify('order', 'New order', 'A new order was created.', `/orders/${orderId}`)
     }
     const saved = await get('SELECT * FROM orders WHERE id = $1', orderId)
     res.status(201).json(await hydrateOrder(saved))
@@ -1467,12 +1467,12 @@ app.get('/api/reports/:type/export', requireModule('reports'), async (req, res) 
   let headers = []
   let rows = []
   if (['sales', 'revenue', 'orders'].includes(type)) {
-    headers = ['Order', 'Customer', 'Status', 'Total', 'Date']
+    headers = ['Customer', 'Status', 'Total', 'Date']
     const orders = await all(
-      `SELECT o.order_number, c.name AS customer_name, o.status, o.total, o.created_at
+      `SELECT c.name AS customer_name, o.status, o.total, o.created_at
        FROM orders o LEFT JOIN customers c ON c.id = o.customer_id
        WHERE o.created_at >= $1 AND o.created_at <= $2 ORDER BY o.created_at DESC`, fromIso, toIso)
-    rows = orders.map((r) => [r.order_number, r.customer_name || '', r.status, r.total, r.created_at])
+    rows = orders.map((r) => [r.customer_name || '', r.status, r.total, r.created_at])
   } else if (type === 'products' || type === 'performance') {
     headers = ['Product', 'Sold', 'Revenue']
     const items = await all(

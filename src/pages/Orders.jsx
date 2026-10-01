@@ -59,7 +59,7 @@ export function Orders() {
             <input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-              placeholder="Search by order number or customer name"
+              placeholder="Search by customer name"
               className={`${inputClass} pl-9`}
             />
           </div>
@@ -89,10 +89,7 @@ export function Orders() {
             <div className="md:hidden divide-y divide-[#3A3A3A]">
               {data.items.map((o) => (
                 <div key={o.id} className="px-4 py-3.5 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <Link to={`/orders/${o.id}`} className="font-bold text-sm text-white hover:text-[#F97316] transition-colors">
-                      {o.order_number}
-                    </Link>
+                  <div className="flex items-start justify-end gap-2">
                     <StatusBadge status={o.status} />
                   </div>
                   <p className="text-sm text-[#A3A3A3]">{o.customer?.name || o.customer_name || 'Walk-in'}</p>
@@ -130,7 +127,7 @@ export function Orders() {
                       onClick={() => setConfirm(o)}
                       className="p-2 rounded-xl bg-[#1A1A1A] hover:bg-rose-500/10 border border-[#3A3A3A] text-rose-400"
                       title="Delete Order"
-                      aria-label={`Delete order ${o.order_number}`}
+                      aria-label="Delete order"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -144,7 +141,6 @@ export function Orders() {
               <table className="w-full text-sm">
                 <thead className="text-xs text-[#A3A3A3] bg-[#1A1A1A]">
                   <tr>
-                    <th className="text-left px-4 py-3">Order No.</th>
                     <th className="text-left px-4 py-3">Customer</th>
                     <th className="text-left px-4 py-3">Items</th>
                     <th className="text-left px-4 py-3">Total</th>
@@ -156,11 +152,6 @@ export function Orders() {
                 <tbody>
                   {data.items.map((o) => (
                     <tr key={o.id} className="border-t border-[#3A3A3A] hover:bg-[#1A1A1A]/40 transition-colors">
-                      <td className="px-4 py-3.5 font-bold">
-                        <Link to={`/orders/${o.id}`} className="text-white hover:text-[#F97316] transition-colors">
-                          {o.order_number}
-                        </Link>
-                      </td>
                       <td className="px-4 py-3.5 text-white">{o.customer?.name || o.customer_name || 'Walk-in'}</td>
                       <td className="px-4 py-3.5 text-[#A3A3A3]">{o.items?.length || 0} items</td>
                       <td className="px-4 py-3.5 font-semibold text-white">{money(o.total, settings.currency_symbol)}</td>
@@ -197,7 +188,7 @@ export function Orders() {
                             onClick={() => setConfirm(o)}
                             className="p-2 rounded-xl hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 text-rose-400 transition-colors"
                             title="Delete order"
-                            aria-label={`Delete order ${o.order_number}`}
+                            aria-label="Delete order"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -213,7 +204,7 @@ export function Orders() {
         <Pagination page={data.page || page} pages={data.pages} total={data.total} onPage={setPage} />
       </div>
 
-      <Modal open={!!receipt} title={`Receipt #${receipt?.order_number || ''}`} onClose={() => setReceipt(null)} slim>
+      <Modal open={!!receipt} title="Receipt" onClose={() => setReceipt(null)} slim>
         {receipt && <ReceiptDocument order={receipt} settings={settings} />}
         <ReceiptActions
           onClose={() => setReceipt(null)}

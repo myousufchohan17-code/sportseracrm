@@ -179,7 +179,7 @@ function Stat({ label, value }) {
 }
 
 function columns(type) {
-  if (['sales', 'revenue', 'orders'].includes(type)) return ['Order', 'Customer', 'Status', 'Total', 'Date']
+  if (['sales', 'revenue', 'orders'].includes(type)) return ['Customer', 'Status', 'Total', 'Date']
   if (type === 'products') return ['Product', 'Sold', 'Revenue', 'Stock']
   if (type === 'customers') return ['Customer', 'Phone', 'Orders', 'Spent']
   if (type === 'inventory' || type === 'low-stock') return ['Product', 'Stock', 'Threshold', 'Status']
@@ -190,7 +190,6 @@ function renderRow(type, row, symbol) {
   if (['sales', 'revenue', 'orders'].includes(type)) {
     return (
       <>
-        <td className="px-4 py-3 font-semibold">{row.order_number}</td>
         <td className="px-4 py-3">{row.customer_name || row.customer?.name || '—'}</td>
         <td className="px-4 py-3"><StatusBadge status={row.status} /></td>
         <td className="px-4 py-3">{money(row.total, symbol)}</td>

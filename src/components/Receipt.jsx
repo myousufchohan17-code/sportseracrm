@@ -44,11 +44,7 @@ export function ReceiptDocument({ order, settings }) {
       </div>
 
       <div className="grid grid-cols-2 gap-x-2 gap-y-2 py-3">
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-zinc-400">Receipt no.</p>
-          <p className="font-bold text-[12px] text-zinc-900">{order?.order_number || 'N/A'}</p>
-        </div>
-        <div className="text-right">
+        <div className="col-span-2 text-right">
           <p className="text-[10px] uppercase tracking-wide text-zinc-400">Date</p>
           <p className="font-medium text-[12px] text-zinc-800">{formatDateTime(order?.created_at)}</p>
         </div>
@@ -150,7 +146,7 @@ export function printReceipt(order, settings) {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>RiSports Receipt - ${esc(order?.order_number || '')}</title>
+  <title>RiSports Receipt</title>
   <style>
     :root { --receipt-width: 72mm; }
     @page {
@@ -254,7 +250,6 @@ export function printReceipt(order, settings) {
     </div>
 
     <div class="meta">
-      <div class="meta-row"><span class="label">Receipt No</span><strong>${esc(order?.order_number || '')}</strong></div>
       <div class="meta-row"><span class="label">Date</span>${esc(formatDateTime(order?.created_at))}</div>
       <div class="meta-row"><span class="label">Customer</span>${esc(customer?.name || order?.customer_name || 'Walk-in customer')}${customer?.phone ? ` · ${esc(customer.phone)}` : ''}</div>
       <div class="meta-row"><span class="label">Status</span><span style="text-transform: capitalize;">${esc(String(order?.status || '').replaceAll('_', ' '))}</span></div>

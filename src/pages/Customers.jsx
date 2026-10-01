@@ -153,8 +153,7 @@ export function CustomerDetail() {
               <div className="md:hidden divide-y divide-line">
                 {customer.orders.map((o) => (
                   <button key={o.id} type="button" onClick={() => navigate(`/orders/${o.id}`)} className="w-full text-left px-4 py-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold text-sm">{o.order_number}</p>
+                    <div className="flex items-center justify-end gap-2">
                       <StatusBadge status={o.status} />
                     </div>
                     <div className="flex items-center justify-between text-sm mt-1">
@@ -168,7 +167,6 @@ export function CustomerDetail() {
                 <table className="w-full text-sm">
                   <thead className="text-xs text-muted bg-canvas/70">
                     <tr>
-                      <th className="text-left px-4 py-3">Order</th>
                       <th className="text-left px-4 py-3">Total</th>
                       <th className="text-left px-4 py-3">Status</th>
                       <th className="text-left px-4 py-3">Date</th>
@@ -177,7 +175,6 @@ export function CustomerDetail() {
                   <tbody>
                     {customer.orders.map((o) => (
                       <tr key={o.id} className="border-t border-line cursor-pointer" onClick={() => navigate(`/orders/${o.id}`)}>
-                        <td className="px-4 py-3 font-semibold">{o.order_number}</td>
                         <td className="px-4 py-3">{money(o.total, settings.currency_symbol)}</td>
                         <td className="px-4 py-3"><StatusBadge status={o.status} /></td>
                         <td className="px-4 py-3 text-muted">{formatDate(o.created_at)}</td>
