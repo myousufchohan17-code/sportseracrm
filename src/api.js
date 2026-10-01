@@ -13,7 +13,12 @@ export async function api(path, options = {}) {
   } catch {
     data = { error: text || 'Unexpected response' }
   }
-  if (!res.ok) throw new Error(data.error || 'Request failed')
+  if (!res.ok) {
+    if (res.status === 401 && !path.startsWith('/auth/')) {
+      window.dispatchEvent(new Event('auth:expired'))
+    }
+    throw new Error(data.error || 'Request failed')
+  }
   return data
 }
 

@@ -27,7 +27,8 @@ export const ROLES = [
 
 export function money(value, symbol = '$') {
   const amount = Number(value || 0)
-  return `${symbol}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const prefix = symbol === 'Rs' ? 'Rs ' : symbol
+  return `${prefix}${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export function formatDate(value) {

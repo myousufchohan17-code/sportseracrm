@@ -4,9 +4,14 @@ import { fileURLToPath } from 'url'
 
 const { Pool } = pg
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const connectionString = process.env.DATABASE_URL
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL must be set in the environment or .env file')
+}
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_9yPY6RvIzdHD@ep-ancient-hat-b448zaqo-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+  connectionString,
   ssl: { rejectUnauthorized: false },
   max: 10,
 })
@@ -84,6 +89,21 @@ export async function initDb() {
       staff_id TEXT NOT NULL,
       created_at TEXT NOT NULL,
       FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS auth_sessions (
+      token_hash TEXT PRIMARY KEY,
+      expires_at TEXT NOT NULL,
+      reports_unlocked_until TEXT DEFAULT '',
+      report_pin_attempts INTEGER NOT NULL DEFAULT 0,
+      report_pin_attempted_at TEXT DEFAULT ''
+    );
+
+    CREATE TABLE IF NOT EXISTS media_files (
+      id TEXT PRIMARY KEY,
+      content_type TEXT NOT NULL,
+      data BYTEA NOT NULL,
+      created_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS customers (
@@ -228,9 +248,9 @@ export async function initDb() {
     email: '',
     phone: '',
     address: '',
-    currency: 'USD',
-    currency_symbol: '$',
-    tax_rate: 0,
+    currency: 'PKR',
+    currency_symbol: 'Rs',
+    tax_rate: 15,
     allow_backorder: false,
     low_stock_notify: true,
     order_prefix: 'ORD',
@@ -248,6 +268,12 @@ export async function initDb() {
   }
 
   await loadSettings()
+
+  if (await getSetting('currency') === 'USD' && await getSetting('currency_symbol') === '$' && Number(await getSetting('tax_rate')) === 0) {
+    await setSetting('currency', 'PKR')
+    await setSetting('currency_symbol', 'Rs')
+    await setSetting('tax_rate', 15)
+  }
 
   const shopName = String((await getSetting('shop_name')) || '')
   const shopTagline = String((await getSetting('shop_tagline')) || '')

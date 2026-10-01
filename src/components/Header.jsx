@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, CalendarRange, ChevronDown, Search, Settings } from 'lucide-react'
+import { Bell, CalendarRange, ChevronDown, Search, Settings, Trash2 } from 'lucide-react'
 import { api } from '../api'
 import { useApp } from '../context'
 import { useDebounced } from '../hooks'
@@ -16,7 +16,7 @@ const PRESETS = [
 ]
 
 export function Header({ onMenu }) {
-  const { settings, range, setRange } = useApp()
+  const { settings, range, setRange, toast } = useApp()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState(null)
@@ -195,21 +195,34 @@ export function Header({ onMenu }) {
                 {notes.items.length === 0 ? (
                   <p className="p-6 text-sm text-[#A3A3A3] text-center">No notifications yet</p>
                 ) : notes.items.map((n) => (
-                  <button
-                    key={n.id}
-                    type="button"
-                    onClick={async () => {
-                      await api(`/notifications/${n.id}/read`, { method: 'PATCH' })
-                      setOpenBell(false)
-                      if (n.link) navigate(n.link)
-                    }}
-                    className={`w-full text-left px-4 py-3 border-b border-[#3A3A3A] last:border-0 hover:bg-[#1A1A1A] transition-colors ${
-                      n.read ? 'text-[#A3A3A3]' : 'bg-[#F97316]/10 text-white'
-                    }`}
-                  >
-                    <p className="text-sm font-semibold">{n.title}</p>
-                    <p className="text-xs text-[#A3A3A3] mt-0.5">{n.message}</p>
-                  </button>
+                  <div key={n.id} className={`flex items-start border-b border-[#3A3A3A] last:border-0 ${n.read ? '' : 'bg-[#F97316]/10'}`}>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await api(`/notifications/${n.id}/read`, { method: 'PATCH' })
+                        setOpenBell(false)
+                        if (n.link) navigate(n.link)
+                      }}
+                      className="min-w-0 flex-1 px-4 py-3 text-left hover:bg-[#1A1A1A] transition-colors"
+                    >
+                      <p className="text-sm font-semibold text-white">{n.title}</p>
+                      <p className="text-xs text-[#A3A3A3] mt-0.5">{n.message}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await api(`/notifications/${n.id}`, { method: 'DELETE' })
+                          setNotes(await api('/notifications'))
+                        } catch (err) { toast(err.message || 'Could not delete notification', 'error') }
+                      }}
+                      className="m-2 grid size-9 shrink-0 place-items-center rounded-lg text-[#A3A3A3] hover:bg-rose-500/10 hover:text-rose-400"
+                      aria-label={`Delete notification: ${n.title}`}
+                      title="Delete notification"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>

@@ -5,6 +5,7 @@ import { Layout } from './components/Layout'
 import { Spinner } from './components/ui'
 
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { Login } from './pages/Login'
 
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
 const Orders = lazy(() => import('./pages/Orders').then((m) => ({ default: m.Orders })))
@@ -18,10 +19,11 @@ const Reports = lazy(() => import('./pages/Reports').then((m) => ({ default: m.R
 const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.SettingsPage })))
 
 function AppRoutes() {
-  const { bootstrapping } = useApp()
+  const { bootstrapping, user } = useApp()
   if (bootstrapping) {
     return <div className="min-h-svh grid place-items-center bg-[#0F0F0F] text-white"><Spinner label="Starting RiSports…" /></div>
   }
+  if (!user) return <Login />
   return (
     <ErrorBoundary>
       <Suspense fallback={<div className="min-h-svh grid place-items-center bg-[#0F0F0F] text-white"><Spinner /></div>}>

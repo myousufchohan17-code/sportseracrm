@@ -3,7 +3,9 @@ import cors from 'cors'
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import { createHash, randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'url'
+import bcrypt from 'bcryptjs'
 import { put, del } from '@vercel/blob'
 import {
   pool,
@@ -29,9 +31,20 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT || 4000
+let databaseReady = Promise.resolve()
 
 app.use(cors())
 app.use(express.json({ limit: '4mb' }))
+app.use('/api', async (req, res, next) => {
+  if (req.path === '/health') return next()
+  try {
+    await databaseReady
+    next()
+  } catch (err) {
+    console.error('Database initialization failed:', err)
+    fail(res, 503, 'Database is unavailable')
+  }
+})
 
 const storage = multer.memoryStorage()
 
@@ -49,6 +62,48 @@ const upload = multer({
 
 function requireModule() {
   return (_req, _res, next) => next()
+}
+
+const AUTH_EMAIL = (process.env.RISPORTS_EMAIL || 'risports@gmail.com').trim().toLowerCase()
+const AUTH_PASSWORD_HASH = process.env.RISPORTS_PASSWORD_HASH || '$2b$12$Z.nXtzloumNAxSAlprugNOJIl/HyqFyLBip.xMCVZBmaIWrkiqYBq'
+const AUTH_SESSION_MS = 12 * 60 * 60 * 1000
+const REPORT_PIN = process.env.RISPORTS_REPORTS_PIN || '4321'
+const loginAttempts = new Map()
+
+function hashToken(token) {
+  return createHash('sha256').update(token).digest('hex')
+}
+
+function cookieValue(req, key) {
+  const item = req.headers.cookie?.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${key}=`))
+  return item ? decodeURIComponent(item.slice(key.length + 1)) : ''
+}
+
+function setSessionCookie(res, token, maxAge) {
+  const secure = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL) ? '; Secure' : ''
+  res.setHeader('Set-Cookie', `risports_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/api; Max-Age=${maxAge}${secure}`)
+}
+
+async function findAuthSession(req) {
+  const token = cookieValue(req, 'risports_session')
+  if (!token) return null
+  const tokenHash = hashToken(token)
+  const session = await get('SELECT * FROM auth_sessions WHERE token_hash = $1 AND expires_at > $2', tokenHash, nowIso())
+  return session ? { ...session, tokenHash } : null
+}
+
+async function requireAuthentication(req, res, next) {
+  try {
+    const session = await findAuthSession(req)
+    if (!session) return fail(res, 401, 'Sign in to continue')
+    req.authSession = session
+    if (req.path.startsWith('/reports/') && req.path !== '/reports/unlock' && new Date(session.reports_unlocked_until || 0) <= new Date()) {
+      return fail(res, 403, 'Enter the reports PIN to continue')
+    }
+    next()
+  } catch (err) {
+    next(err)
+  }
 }
 
 function fail(res, status, error) {
@@ -79,7 +134,26 @@ function like(value) {
 
 async function formatMoney(n) {
   const symbol = await getSetting('currency_symbol', '$')
-  return `${symbol}${Number(n || 0).toFixed(2)}`
+  return `${symbol === 'Rs' ? 'Rs ' : symbol}${Number(n || 0).toFixed(2)}`
+}
+
+async function storeImage(file, prefix) {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const ext = path.extname(file.originalname || '').toLowerCase() || '.png'
+    try {
+      const blob = await put(`${prefix}-${Date.now()}-${id()}${ext}`, file.buffer, { access: 'public' })
+      return blob.url
+    } catch (err) {
+      console.warn('Blob upload failed; storing image in the database instead:', err.message)
+    }
+  }
+
+  const imageId = id()
+  await run(
+    'INSERT INTO media_files (id, content_type, data, created_at) VALUES ($1, $2, $3, $4)',
+    imageId, file.mimetype, file.buffer, nowIso()
+  )
+  return `/api/media/${imageId}`
 }
 
 async function productRow(row) {
@@ -246,8 +320,76 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     blobStorageConfigured: hasBlobToken,
-    storageStatus: hasBlobToken ? 'ready' : 'not_configured',
+    storageStatus: hasBlobToken ? 'blob' : 'database',
+    imageUploadsAvailable: true,
   })
+})
+
+app.get('/api/auth/me', async (req, res) => {
+  const session = await findAuthSession(req)
+  res.json({ authenticated: Boolean(session), email: session ? AUTH_EMAIL : '' })
+})
+
+app.post('/api/auth/login', async (req, res) => {
+  const ip = req.ip || 'unknown'
+  const attempt = loginAttempts.get(ip)
+  if (attempt && attempt.count >= 10 && Date.now() - attempt.startedAt < 15 * 60 * 1000) {
+    return fail(res, 429, 'Too many sign-in attempts. Try again later.')
+  }
+  const email = String(req.body?.email || '').trim().toLowerCase()
+  const password = String(req.body?.password || '')
+  let validPassword = false
+  try { validPassword = await bcrypt.compare(password, AUTH_PASSWORD_HASH) } catch {}
+  if (email !== AUTH_EMAIL || !validPassword) {
+    const current = attempt && Date.now() - attempt.startedAt < 15 * 60 * 1000
+      ? attempt
+      : { count: 0, startedAt: Date.now() }
+    loginAttempts.set(ip, { ...current, count: current.count + 1 })
+    return fail(res, 401, 'Email or password is incorrect')
+  }
+  loginAttempts.delete(ip)
+  const token = randomBytes(32).toString('base64url')
+  const expiresAt = new Date(Date.now() + AUTH_SESSION_MS).toISOString()
+  await run('INSERT INTO auth_sessions (token_hash, expires_at, reports_unlocked_until) VALUES ($1, $2, $3)', hashToken(token), expiresAt, '')
+  setSessionCookie(res, token, AUTH_SESSION_MS / 1000)
+  res.json({ authenticated: true, email: AUTH_EMAIL })
+})
+
+app.post('/api/auth/logout', async (req, res) => {
+  const token = cookieValue(req, 'risports_session')
+  if (token) await run('DELETE FROM auth_sessions WHERE token_hash = $1', hashToken(token))
+  setSessionCookie(res, '', 0)
+  res.json({ ok: true })
+})
+
+app.use('/api', requireAuthentication)
+
+app.get('/api/media/:id', async (req, res) => {
+  const image = await get('SELECT content_type, data FROM media_files WHERE id = $1', req.params.id)
+  if (!image) return fail(res, 404, 'Image not found')
+  res.setHeader('Content-Type', image.content_type)
+  res.setHeader('Cache-Control', 'private, max-age=3600')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.send(image.data)
+})
+
+app.post('/api/reports/unlock', async (req, res) => {
+  const attemptedAt = Date.parse(req.authSession.report_pin_attempted_at || '') || 0
+  const attempts = attemptedAt > Date.now() - 15 * 60 * 1000 ? Number(req.authSession.report_pin_attempts) || 0 : 0
+  if (attempts >= 5) return fail(res, 429, 'Too many incorrect PIN attempts. Try again later.')
+  if (String(req.body?.pin || '') !== REPORT_PIN) {
+    await run(
+      'UPDATE auth_sessions SET report_pin_attempts = $1, report_pin_attempted_at = $2 WHERE token_hash = $3',
+      attempts + 1, nowIso(), req.authSession.tokenHash
+    )
+    return fail(res, 403, 'Incorrect PIN')
+  }
+  const unlockedUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString()
+  await run(
+    'UPDATE auth_sessions SET reports_unlocked_until = $1, report_pin_attempts = 0, report_pin_attempted_at = $2 WHERE token_hash = $3',
+    unlockedUntil, '', req.authSession.tokenHash
+  )
+  res.json({ unlocked: true })
 })
 
 app.get('/api/settings', async (_req, res) => {
@@ -271,19 +413,14 @@ app.post('/api/settings/logo', upload.single('logo'), async (req, res) => {
   if (!allowedTypes.includes(req.file.mimetype)) {
     return fail(res, 400, 'Only PNG, JPG, and WebP images are allowed')
   }
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return fail(res, 500, 'Storage not configured. Please set BLOB_READ_WRITE_TOKEN in your Vercel environment variables.')
-  }
   try {
     const oldLogo = await getSetting('logo', '')
-    const ext = path.extname(req.file.originalname || '').toLowerCase() || '.png'
-    const filename = `logo-${Date.now()}-${crypto.randomUUID()}${ext}`
-    const blob = await put(filename, req.file.buffer, { access: 'public' })
-    await setSetting('logo', blob.url)
-    if (oldLogo && oldLogo.startsWith('https://') && oldLogo !== blob.url) {
+    const imageUrl = await storeImage(req.file, 'logo')
+    await setSetting('logo', imageUrl)
+    if (oldLogo && oldLogo.startsWith('https://') && oldLogo !== imageUrl && process.env.BLOB_READ_WRITE_TOKEN) {
       try { await del(oldLogo) } catch {}
     }
-    res.json({ logo: blob.url, settings: await getSettings() })
+    res.json({ logo: imageUrl, settings: await getSettings() })
   } catch (err) {
     console.error('Logo upload failed:', err)
     fail(res, 500, 'Failed to upload logo. Please try again.')
@@ -296,14 +433,8 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
   if (!allowedTypes.includes(req.file.mimetype)) {
     return fail(res, 400, 'Only PNG, JPG, and WebP images are allowed')
   }
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
-    return fail(res, 500, 'Storage not configured. Please set BLOB_READ_WRITE_TOKEN in your Vercel environment variables.')
-  }
   try {
-    const ext = path.extname(req.file.originalname || '').toLowerCase() || '.png'
-    const filename = `image-${Date.now()}-${crypto.randomUUID()}${ext}`
-    const blob = await put(filename, req.file.buffer, { access: 'public' })
-    res.json({ url: blob.url })
+    res.json({ url: await storeImage(req.file, 'image') })
   } catch (err) {
     console.error('Image upload failed:', err)
     fail(res, 500, 'Failed to upload image. Please try again.')
@@ -349,6 +480,12 @@ app.post('/api/notifications/read-all', async (_req, res) => {
 
 app.patch('/api/notifications/:id/read', async (req, res) => {
   await run('UPDATE notifications SET read = 1 WHERE id = $1', req.params.id)
+  res.json({ ok: true })
+})
+
+app.delete('/api/notifications/:id', async (req, res) => {
+  const result = await run('DELETE FROM notifications WHERE id = $1', req.params.id)
+  if (!result.changes) return fail(res, 404, 'Notification not found')
   res.json({ ok: true })
 })
 
@@ -549,8 +686,6 @@ app.put('/api/customers/:id', requireModule('customers'), async (req, res) => {
 })
 
 app.delete('/api/customers/:id', requireModule('customers'), async (req, res) => {
-  const ordersRow = await get('SELECT COUNT(*) AS c FROM orders WHERE customer_id = $1', req.params.id)
-  if (ordersRow?.c) return fail(res, 400, 'This customer has orders and cannot be deleted')
   const info = await run('DELETE FROM customers WHERE id = $1', req.params.id)
   if (!info.changes) return fail(res, 404, 'Customer not found')
   res.json({ ok: true })
@@ -1132,9 +1267,6 @@ app.post('/api/orders/:id/cancel', requireModule('orders'), async (req, res) => 
 app.delete('/api/orders/:id', requireModule('orders'), async (req, res) => {
   const existing = await get('SELECT * FROM orders WHERE id = $1', req.params.id)
   if (!existing) return fail(res, 404, 'Order not found')
-  if (!['pending', 'cancelled'].includes(existing.status)) {
-    return fail(res, 400, 'Only pending or cancelled orders can be deleted')
-  }
   if (existing.stock_applied) await restoreStock(existing.id, 'order_cancel')
   await run('DELETE FROM orders WHERE id = $1', existing.id)
   res.json({ ok: true })
@@ -1396,10 +1528,9 @@ if (fs.existsSync(dist)) {
   })
 }
 
-// Initialize database on startup
-initDb().catch((err) => {
-  console.error('Database initialization failed:', err)
-})
+// Initialize the schema before handling API requests.
+databaseReady = initDb()
+databaseReady.catch((err) => console.error('Database initialization failed:', err))
 
 if (!process.env.VERCEL) {
   app.listen(PORT, () => {

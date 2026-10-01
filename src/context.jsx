@@ -6,7 +6,9 @@ const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
   const [bootstrapping, setBootstrapping] = useState(true)
+  const [user, setUser] = useState(null)
   const [settings, setSettings] = useState({})
+  const [theme, setTheme] = useState(() => localStorage.getItem('risports-theme') || 'dark')
   const [toasts, setToasts] = useState([])
   const [range, setRange] = useState(() => rangePreset('month'))
 
@@ -28,21 +30,59 @@ export function AppProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    refreshMe().finally(() => setBootstrapping(false))
+    document.documentElement.dataset.theme = theme
+    localStorage.setItem('risports-theme', theme)
+  }, [theme])
+
+  useEffect(() => {
+    api('/auth/me')
+      .then(async (data) => {
+        if (data.authenticated) {
+          setUser(data)
+          await refreshMe()
+        }
+      })
+      .finally(() => setBootstrapping(false))
   }, [refreshMe])
+
+  useEffect(() => {
+    const expireSession = () => {
+      setUser(null)
+      setSettings({})
+    }
+    window.addEventListener('auth:expired', expireSession)
+    return () => window.removeEventListener('auth:expired', expireSession)
+  }, [])
+
+  const login = useCallback(async (credentials) => {
+    const data = await api('/auth/login', { method: 'POST', body: credentials })
+    setUser(data)
+    await refreshMe()
+  }, [refreshMe])
+
+  const logout = useCallback(async () => {
+    await api('/auth/logout', { method: 'POST' })
+    setUser(null)
+    setSettings({})
+  }, [])
 
   const value = useMemo(
     () => ({
       bootstrapping,
+      user,
       settings,
       setSettings,
+      theme,
+      setTheme,
       range,
       setRange,
       toast,
       toasts,
       refreshMe,
+      login,
+      logout,
     }),
-    [bootstrapping, settings, range, toast, toasts, refreshMe]
+    [bootstrapping, user, settings, theme, range, toast, toasts, refreshMe, login, logout]
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

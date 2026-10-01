@@ -83,7 +83,7 @@ export function Products() {
       setImagePreview(res.url)
       toast('Image uploaded successfully')
     } catch (err) {
-      toast(err.message || 'Failed to upload image. Make sure BLOB_READ_WRITE_TOKEN is configured.', 'error')
+      toast(err.message || 'Failed to upload image. Please try again.', 'error')
       setImagePreview(form.image || '')
     } finally {
       setUploadingImage(false)

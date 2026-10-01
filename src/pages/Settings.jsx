@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Upload, RotateCcw, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Upload, RotateCcw } from 'lucide-react'
 import { api, upload } from '../api'
 import { useApp } from '../context'
 import { Field, inputClass } from '../components/ui'
@@ -14,9 +14,9 @@ export function SettingsPage() {
     email: settings.email || '',
     phone: settings.phone || '',
     address: settings.address || '',
-    currency: settings.currency || 'USD',
-    currency_symbol: settings.currency_symbol || '$',
-    tax_rate: settings.tax_rate ?? 0,
+    currency: settings.currency || 'PKR',
+    currency_symbol: settings.currency_symbol || 'Rs',
+    tax_rate: settings.tax_rate ?? 15,
     order_prefix: settings.order_prefix || 'ORD',
     allow_backorder: Boolean(settings.allow_backorder),
     low_stock_notify: settings.low_stock_notify !== false,
@@ -26,7 +26,6 @@ export function SettingsPage() {
 
   const [busy, setBusy] = useState(false)
   const [logoBusy, setLogoBusy] = useState(false)
-  const [storageConfigured, setStorageConfigured] = useState(true)
 
   useEffect(() => {
     setForm({
@@ -36,9 +35,9 @@ export function SettingsPage() {
       email: settings.email || '',
       phone: settings.phone || '',
       address: settings.address || '',
-      currency: settings.currency || 'USD',
-      currency_symbol: settings.currency_symbol || '$',
-      tax_rate: settings.tax_rate ?? 0,
+      currency: settings.currency || 'PKR',
+      currency_symbol: settings.currency_symbol || 'Rs',
+      tax_rate: settings.tax_rate ?? 15,
       order_prefix: settings.order_prefix || 'ORD',
       allow_backorder: Boolean(settings.allow_backorder),
       low_stock_notify: settings.low_stock_notify !== false,
@@ -46,12 +45,6 @@ export function SettingsPage() {
       notify_inventory: settings.notify_inventory !== false,
     })
   }, [settings])
-
-  useEffect(() => {
-    api('/health')
-      .then((data) => setStorageConfigured(data.blobStorageConfigured !== false))
-      .catch(() => {})
-  }, [])
 
   const save = async (e) => {
     e.preventDefault()
@@ -113,19 +106,6 @@ export function SettingsPage() {
   return (
     <div className="space-y-5 max-w-3xl">
       <Header title="Store Settings" subtitle="Configure RiSports branding, logo, and POS preferences" />
-
-      {/* Blob Token Notice if not configured */}
-      {!storageConfigured && (
-        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4 flex items-start gap-3">
-          <AlertCircle size={20} className="text-amber-400 shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-semibold text-amber-400">Vercel Blob Storage Notice</p>
-            <p className="mt-1 text-[#A3A3A3] leading-relaxed">
-              To enable image and logo uploads on Vercel, add <code className="font-mono bg-[#1A1A1A] border border-[#3A3A3A] text-amber-300 px-1.5 py-0.5 rounded text-xs">BLOB_READ_WRITE_TOKEN</code> to your Vercel Project Environment Variables. The app uses the permanent default logo <code className="font-mono bg-[#1A1A1A] border border-[#3A3A3A] text-white px-1.5 py-0.5 rounded text-xs">/risports.png</code> until set.
-            </p>
-          </div>
-        </div>
-      )}
 
       <form onSubmit={save} className="card p-5 sm:p-7 space-y-6">
         {/* Branding & Logo Section */}

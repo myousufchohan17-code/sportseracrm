@@ -112,7 +112,7 @@ export function Customers() {
         <Pagination page={data.page || page} pages={data.pages} total={data.total} onPage={setPage} />
       </div>
       <CustomerForm open={open} form={form} setForm={setForm} editing={editing} busy={busy} onClose={() => setOpen(false)} onSubmit={save} />
-      <ConfirmDialog open={!!confirm} title="Delete customer?" message="Customers with orders cannot be deleted." busy={busy} onClose={() => setConfirm(null)} onConfirm={async () => {
+      <ConfirmDialog open={!!confirm} title="Delete customer?" message="This removes the customer profile. Existing orders will remain saved without a linked customer profile." busy={busy} onClose={() => setConfirm(null)} onConfirm={async () => {
         setBusy(true)
         try { await api(`/customers/${confirm.id}`, { method: 'DELETE' }); toast('Customer deleted'); setConfirm(null); load() }
         catch (err) { toast(err.message, 'error') }

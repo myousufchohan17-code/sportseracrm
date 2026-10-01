@@ -32,6 +32,22 @@
   --accent-orange-hover: #EA580C;
 }
 
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-canvas: #F3F4F6;
+  --color-panel: #FFFFFF;
+  --color-card: #FFFFFF;
+  --color-line: #D1D5DB;
+  --color-ink: #171717;
+  --color-muted: #667085;
+  --bg-canvas: #F3F4F6;
+  --bg-panel: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --border-line: #D1D5DB;
+  --text-white: #171717;
+  --text-muted: #667085;
+}
+
 html, body, #root {
   min-height: 100%;
   max-width: 100%;
@@ -47,6 +63,12 @@ body {
   color: #FFFFFF;
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   color-scheme: dark;
+}
+
+:root[data-theme="light"] body {
+  background-color: #F3F4F6;
+  color: #171717;
+  color-scheme: light;
 }
 
 #root {
@@ -76,6 +98,60 @@ input, select, textarea, button {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
   min-width: 0;
   color: #FFFFFF;
+}
+
+:root[data-theme="light"] .card {
+  background-color: #FFFFFF;
+  border-color: #D1D5DB;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  color: #171717;
+}
+
+:root[data-theme="light"] [class*="bg-[#0F0F0F]"] {
+  background-color: #F3F4F6 !important;
+}
+
+:root[data-theme="light"] [class*="bg-[#1A1A1A]"] {
+  background-color: #FFFFFF !important;
+}
+
+:root[data-theme="light"] [class*="bg-[#262626]"] {
+  background-color: #F8FAFC !important;
+}
+
+:root[data-theme="light"] [class*="border-[#3A3A3A]"] {
+  border-color: #D1D5DB !important;
+}
+
+:root[data-theme="light"] [class~="text-white"] {
+  color: #171717 !important;
+}
+
+:root[data-theme="light"] [class~="text-white"][class*="bg-[#F97316]"],
+:root[data-theme="light"] [class~="text-white"][class*="bg-rose-"],
+:root[data-theme="light"] [class~="text-white"][class*="bg-green-"],
+:root[data-theme="light"] [class~="text-white"][class*="bg-red-"] {
+  color: #FFFFFF !important;
+}
+
+:root[data-theme="light"] [class*="text-[#A3A3A3]"] {
+  color: #667085 !important;
+}
+
+:root[data-theme="light"] .signin-panel {
+  background-color: #FFFFFF;
+  border-color: #D1D5DB;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.12);
+}
+
+:root[data-theme="light"] .signin-input {
+  background-color: #F8FAFC;
+  border-color: #D1D5DB;
+  color: #171717;
+}
+
+.signin-panel {
+  border-radius: 0.75rem;
 }
 
 .soft-ring:focus, .soft-ring:focus-visible {

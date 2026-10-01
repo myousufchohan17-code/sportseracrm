@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Search, Eye, Pencil, Printer } from 'lucide-react'
+import { Plus, Search, Eye, Pencil, Printer, Trash2 } from 'lucide-react'
 import { api } from '../api'
 import { useApp } from '../context'
 import { useDebounced } from '../hooks'
@@ -125,6 +125,15 @@ export function Orders() {
                         <Pencil size={16} />
                       </Link>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setConfirm(o)}
+                      className="p-2 rounded-xl bg-[#1A1A1A] hover:bg-rose-500/10 border border-[#3A3A3A] text-rose-400"
+                      title="Delete Order"
+                      aria-label={`Delete order ${o.order_number}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -183,6 +192,15 @@ export function Orders() {
                               <Pencil size={16} />
                             </Link>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => setConfirm(o)}
+                            className="p-2 rounded-xl hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 text-rose-400 transition-colors"
+                            title="Delete order"
+                            aria-label={`Delete order ${o.order_number}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
                       </td>
                     </tr>

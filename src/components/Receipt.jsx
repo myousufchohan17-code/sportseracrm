@@ -136,13 +136,14 @@ export function printReceipt(order, settings) {
   const logoUrl = rawLogo.startsWith('http://') || rawLogo.startsWith('https://')
     ? rawLogo
     : `${window.location.origin}${rawLogo.startsWith('/') ? rawLogo : '/' + rawLogo}`
+  const fallbackLogoUrl = `${window.location.origin}/risports.png`
 
   const rows = items.map((item) => `
     <tr>
-      <td style="padding: 5px 0; border-bottom: 1px solid #eee; vertical-align: top; font-weight: 500;">${esc(item.product_name)}</td>
-      <td style="padding: 5px 0; border-bottom: 1px solid #eee; text-align: center; vertical-align: top;">${item.quantity}</td>
-      <td style="padding: 5px 0; border-bottom: 1px solid #eee; text-align: right; vertical-align: top;">${money(item.unit_price, shop.symbol)}</td>
-      <td style="padding: 5px 0; border-bottom: 1px solid #eee; text-align: right; vertical-align: top; font-weight: 600;">${money(item.total ?? (item.quantity * item.unit_price), shop.symbol)}</td>
+      <td class="item-cell">${esc(item.product_name)}</td>
+      <td class="qty-cell">${item.quantity}</td>
+      <td class="number-cell">${money(item.unit_price, shop.symbol)}</td>
+      <td class="number-cell">${money(item.total ?? (item.quantity * item.unit_price), shop.symbol)}</td>
     </tr>`).join('')
 
   const html = `<!doctype html>
@@ -151,54 +152,63 @@ export function printReceipt(order, settings) {
   <meta charset="utf-8" />
   <title>RiSports Receipt - ${esc(order?.order_number || '')}</title>
   <style>
+    :root { --receipt-width: 72mm; }
     @page {
       size: 80mm auto;
       margin: 4mm;
     }
-    *, *::before, *::after {
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
+    *, *::before, *::after { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color: #111;
+      color: #000;
       margin: 0;
       padding: 0;
       background: #fff;
       font-size: 12px;
       line-height: 1.35;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .sheet {
-      width: 72mm;
-      max-width: 100%;
+      width: min(var(--receipt-width), 100%);
+      max-width: var(--receipt-width);
       margin: 0 auto;
-      padding: 4mm 0;
+      padding: 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .center { text-align: center; }
     h1 {
       margin: 4px 0 2px;
       font-size: 16px;
       font-weight: 800;
-      letter-spacing: -0.02em;
     }
-    .muted { color: #666; font-size: 11px; }
-    .label { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: #777; margin-bottom: 1px; }
+    .muted { color: #222; font-size: 11px; }
+    .label { font-size: 10px; text-transform: uppercase; color: #222; margin-right: 4px; }
+    .meta { padding: 6px 0; border-bottom: 1px dashed #222; }
+    .meta-row { margin: 2px 0; overflow-wrap: anywhere; }
     table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 11px; }
+    .items-table { table-layout: fixed; page-break-inside: avoid; break-inside: avoid; }
+    .items-table col.item { width: 36%; }
+    .items-table col.qty { width: 10%; }
+    .items-table col.price, .items-table col.total { width: 27%; }
+    .items-table th, .items-table td { padding: 3px 1px; vertical-align: top; }
+    .items-table th { color: #222; }
+    .items-table td { border-bottom: 1px solid #222; }
+    .item-cell { overflow-wrap: anywhere; font-weight: 500; }
+    .qty-cell { text-align: center; }
+    .number-cell { text-align: right; overflow-wrap: anywhere; }
     th {
-      font-size: 9px;
+      font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #666;
-      border-top: 1px solid #ddd;
-      border-bottom: 1px solid #ddd;
-      padding: 5px 0;
+      color: #222;
+      border-top: 1px solid #222;
+      border-bottom: 1px solid #222;
       text-align: left;
     }
     .accent {
-      color: #EA580C;
+      color: #222;
       font-weight: 800;
-      letter-spacing: 0.16em;
       font-size: 10px;
       text-transform: uppercase;
       margin-top: 6px;
@@ -213,20 +223,21 @@ export function printReceipt(order, settings) {
       justify-content: space-between;
       font-weight: 800;
       font-size: 14px;
-      border-top: 2px solid #111;
+      color: #000;
+      border-top: 1px solid #000;
       padding-top: 6px;
       margin-top: 6px;
     }
     img.logo {
-      width: 44px;
-      height: 44px;
+      width: 45px;
+      height: 45px;
       object-fit: contain;
       margin: 0 auto 4px auto;
       display: block;
     }
     @media print {
       body { margin: 0; padding: 0; }
-      .sheet { width: 100%; }
+      .sheet { width: var(--receipt-width); max-width: 100%; }
       .no-print { display: none !important; }
     }
   </style>
@@ -242,18 +253,15 @@ export function printReceipt(order, settings) {
       <div class="accent">Receipt</div>
     </div>
 
-    <table style="margin-top: 10px; border-bottom: 1px dashed #eee; padding-bottom: 6px;">
-      <tr>
-        <td style="padding: 2px 0;"><div class="label">Receipt no.</div><strong>${esc(order?.order_number || '')}</strong></td>
-        <td style="padding: 2px 0; text-align: right;"><div class="label">Date</div>${esc(formatDateTime(order?.created_at))}</td>
-      </tr>
-      <tr>
-        <td style="padding: 4px 0 2px 0;"><div class="label">Customer</div>${esc(customer?.name || order?.customer_name || 'Walk-in customer')}${customer?.phone ? `<div class="muted">${esc(customer.phone)}</div>` : ''}</td>
-        <td style="padding: 4px 0 2px 0; text-align: right;"><div class="label">Status</div><span style="text-transform: capitalize;">${esc(String(order?.status || '').replaceAll('_', ' '))}</span></td>
-      </tr>
-    </table>
+    <div class="meta">
+      <div class="meta-row"><span class="label">Receipt No</span><strong>${esc(order?.order_number || '')}</strong></div>
+      <div class="meta-row"><span class="label">Date</span>${esc(formatDateTime(order?.created_at))}</div>
+      <div class="meta-row"><span class="label">Customer</span>${esc(customer?.name || order?.customer_name || 'Walk-in customer')}${customer?.phone ? ` · ${esc(customer.phone)}` : ''}</div>
+      <div class="meta-row"><span class="label">Status</span><span style="text-transform: capitalize;">${esc(String(order?.status || '').replaceAll('_', ' '))}</span></div>
+    </div>
 
-    <table style="margin-top: 8px;">
+    <table class="items-table">
+      <colgroup><col class="item" /><col class="qty" /><col class="price" /><col class="total" /></colgroup>
       <thead>
         <tr>
           <th>Item</th>
@@ -267,9 +275,9 @@ export function printReceipt(order, settings) {
       </tbody>
     </table>
 
-    <div style="margin-top: 10px; font-size: 12px;">
+    <div style="margin-top: 8px; font-size: 12px; text-align: right;">
       <div class="total-row"><span class="muted">Subtotal</span><span>${money(order?.subtotal, shop.symbol)}</span></div>
-      ${Number(order?.discount) > 0 ? `<div class="total-row" style="color: #EA580C;"><span>Discount</span><span>- ${money(order?.discount, shop.symbol)}</span></div>` : ''}
+      ${Number(order?.discount) > 0 ? `<div class="total-row" style="color: #222;"><span>Discount</span><span>- ${money(order?.discount, shop.symbol)}</span></div>` : ''}
       ${Number(order?.tax) > 0 ? `<div class="total-row"><span class="muted">Tax</span><span>${money(order?.tax, shop.symbol)}</span></div>` : ''}
       <div class="grand-total"><span>Grand Total</span><span>${money(order?.total, shop.symbol)}</span></div>
     </div>
@@ -288,12 +296,25 @@ export function printReceipt(order, settings) {
     }
 
     var img = document.getElementById('receipt-logo');
-    if (img && !img.complete) {
-      img.onload = triggerPrint;
-      img.onerror = triggerPrint;
-    } else {
-      window.onload = triggerPrint;
+    var fallbackLogo = ${JSON.stringify(fallbackLogoUrl)};
+    function waitForLogo() {
+      if (!img) return triggerPrint();
+      if (img.complete) {
+        if (img.naturalWidth > 0 || img.src === fallbackLogo) return triggerPrint();
+        img.src = fallbackLogo;
+        return waitForLogo();
+      }
+      img.addEventListener('load', triggerPrint, { once: true });
+      img.addEventListener('error', function () {
+        if (img.src !== fallbackLogo) {
+          img.src = fallbackLogo;
+          waitForLogo();
+        } else {
+          triggerPrint();
+        }
+      }, { once: true });
     }
+    waitForLogo();
   </script>
 </body>
 </html>`
@@ -331,7 +352,7 @@ export function ReceiptActions({ onPrint, onClose }) {
         onClick={onPrint}
         className="h-10 px-4 rounded-xl bg-[#F97316] hover:bg-[#EA580C] text-white text-sm font-semibold inline-flex items-center justify-center gap-2 transition-colors"
       >
-        <Printer size={16} /> Print Receipt / PDF
+        <Printer size={16} /> Print Receipt
       </button>
     </div>
   )

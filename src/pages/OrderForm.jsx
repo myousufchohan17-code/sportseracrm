@@ -416,7 +416,7 @@ function OrderFormInner({ mode }) {
                 Cancel Order
               </button>
             )}
-            {['pending', 'cancelled'].includes(orderMeta?.status) && (
+            {orderMeta && (
               <button
                 type="button"
                 onClick={() => setConfirm('delete')}
@@ -532,7 +532,7 @@ function OrderFormInner({ mode }) {
         <ConfirmDialog
           open={!!confirm}
           title={confirm === 'delete' ? 'Delete this order?' : 'Cancel this order?'}
-          message={confirm === 'delete' ? 'Only pending or cancelled orders can be deleted.' : 'Stock will be restored to inventory.'}
+          message={confirm === 'delete' ? 'This order will be permanently deleted. Any stock applied by this order will be restored.' : 'Stock will be restored to inventory.'}
           confirmLabel={confirm === 'delete' ? 'Delete' : 'Cancel Order'}
           busy={saving}
           onClose={() => setConfirm(null)}

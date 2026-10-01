@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, ShoppingBag, Users, Package, Tags, Boxes,
-  BarChart3, Settings, ChevronLeft, Menu, X,
+  BarChart3, Settings, ChevronLeft, Menu, X, Sun, Moon, LogOut,
 } from 'lucide-react'
 import { useApp } from '../context'
 
@@ -18,7 +18,7 @@ export const NAV = [
 ]
 
 function SidebarPanel({ collapsed, setCollapsed, setMobileOpen, mobile }) {
-  const { settings } = useApp()
+  const { settings, theme, setTheme, logout, toast } = useApp()
   const compact = collapsed && !mobile
   const logoSrc = settings.logo || '/risports.png'
 
@@ -77,18 +77,43 @@ function SidebarPanel({ collapsed, setCollapsed, setMobileOpen, mobile }) {
           </NavLink>
         ))}
       </nav>
-      {!mobile && (
-        <div className="p-3 border-t border-[#3A3A3A]">
+      <div className="p-3 border-t border-[#3A3A3A]">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-[#3A3A3A] bg-[#262626] py-2 text-xs text-white hover:bg-[#333]"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            {!compact && (theme === 'dark' ? 'Light theme' : 'Dark theme')}
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try { await logout(); setMobileOpen(false) }
+              catch (err) { toast(err.message || 'Sign out failed', 'error') }
+            }}
+            className="flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border border-[#3A3A3A] bg-[#262626] py-2 text-xs text-white hover:bg-[#333]"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut size={15} />
+            {!compact && 'Sign out'}
+          </button>
+        </div>
+        {!mobile && (
           <button
             type="button"
             onClick={() => setCollapsed((v) => !v)}
-            className="hidden lg:flex w-full items-center justify-center gap-2 text-xs text-[#A3A3A3] hover:text-white py-2 rounded-xl hover:bg-[#262626] transition-colors"
+            className="hidden lg:flex w-full items-center justify-center gap-2 text-xs text-[#A3A3A3] hover:text-white py-2 rounded-xl hover:bg-[#262626] transition-colors mt-2"
           >
             <ChevronLeft size={14} className={collapsed ? 'rotate-180' : ''} />
             {!collapsed && 'Collapse'}
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </aside>
   )
 }

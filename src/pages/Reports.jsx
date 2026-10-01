@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Download } from 'lucide-react'
+import { Download, LockKeyhole } from 'lucide-react'
 import { api } from '../api'
 import { useApp } from '../context'
 import { EmptyState, Spinner, StatusBadge, inputClass } from '../components/ui'
@@ -19,16 +19,46 @@ export function Reports() {
   const { settings, range, toast } = useApp()
   const [type, setType] = useState('sales')
   const [search, setSearch] = useState('')
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [reportState, setReportState] = useState({ key: '', data: null })
+  const [unlocked, setUnlocked] = useState(false)
+  const [pin, setPin] = useState('')
+  const [pinError, setPinError] = useState('')
+  const [pinBusy, setPinBusy] = useState(false)
 
-  const load = async () => {
-    setLoading(true)
-    try { setData(await api(`/reports/${type}?from=${range.from}&to=${range.to}`)) }
-    catch (err) { toast(err.message, 'error'); setData({ items: [] }) }
-    finally { setLoading(false) }
+  const requestKey = `${type}:${range.from}:${range.to}`
+  const data = reportState.key === requestKey ? reportState.data : null
+  const loading = unlocked && reportState.key !== requestKey
+
+  useEffect(() => {
+    if (!unlocked) return
+    let active = true
+    api(`/reports/${type}?from=${range.from}&to=${range.to}`)
+      .then((result) => {
+        if (active) setReportState({ key: requestKey, data: result })
+      })
+      .catch((err) => {
+        if (active) {
+          toast(err.message, 'error')
+          setReportState({ key: requestKey, data: { items: [] } })
+        }
+      })
+    return () => { active = false }
+  }, [unlocked, requestKey, type, range.from, range.to, toast])
+
+  const unlock = async (event) => {
+    event.preventDefault()
+    setPinBusy(true)
+    setPinError('')
+    try {
+      await api('/reports/unlock', { method: 'POST', body: { pin } })
+      setUnlocked(true)
+      setPin('')
+    } catch (err) {
+      setPinError(err.message || 'Incorrect PIN')
+    } finally {
+      setPinBusy(false)
+    }
   }
-  useEffect(() => { load() }, [type, range.from, range.to])
 
   const exportCsv = async () => {
     const res = await fetch(`/api/reports/${type}/export?from=${range.from}&to=${range.to}`)
@@ -49,6 +79,37 @@ export function Reports() {
     if (!search.trim()) return true
     return JSON.stringify(row).toLowerCase().includes(search.toLowerCase())
   })
+
+  if (!unlocked) {
+    return (
+      <div className="space-y-5">
+        <Header title="Reports" subtitle="Restricted access" />
+        <div className="card mx-auto max-w-md p-6 sm:p-8">
+          <div className="mb-5 grid size-12 place-items-center rounded-xl bg-[#F97316]/15 text-[#F97316]"><LockKeyhole size={22} /></div>
+          <h2 className="text-lg font-bold text-white">Enter reports PIN</h2>
+          <form onSubmit={unlock} className="mt-5 space-y-4">
+            <input
+              type="password"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{4}"
+              maxLength={4}
+              value={pin}
+              onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="4-digit PIN"
+              aria-label="4-digit reports PIN"
+              required
+              className={`${inputClass} text-center text-lg`}
+            />
+            {pinError && <p role="alert" className="text-sm text-rose-400">{pinError}</p>}
+            <button disabled={pinBusy || pin.length !== 4} className="h-11 w-full rounded-xl bg-[#F97316] text-sm font-semibold text-white hover:bg-[#EA580C] disabled:opacity-60">
+              {pinBusy ? 'Checking…' : 'Unlock reports'}
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-5">
